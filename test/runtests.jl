@@ -39,23 +39,15 @@ pkgids_, pkgentries = MyPkgGraph.unzip(pkgs);
 
 pkgids = unique(vcat(pkgids_, collect(MyPkgGraph.STDLIB_UUIDS)))
 pkgnames = unique([MyPkgGraph.name.(pkgids_); MyPkgGraph.STDLIB_NAMES])
-NV = length(pkgids)
-id_vid = Dict(pkgids .=> 1:NV)
 
-did, rdi = MyPkgGraph.bijection(pkgids, pkgnames)
-g = IndexedLabeledGraph{String}()
-Catlab.Graphs.add_vertices!(g, NV; label=pkgnames)
+g = registry_graph(GENERAL_REGISTRY)
 
-for (k, v) in did
-    # @info k, v
-    for c in children(k)
-        Catlab.Graphs.add_edge!(g, id_vid[k], id_vid[c])
-    end
-end
+# private packages can have public deps, and wouldn't be found
+@test_throws Any registry_graph(MyPkgGraph.REGISTRIES[2])
 
-open("graph.json", "w") do f
-    JSON.print(f, generate_json_acset(g), 2)
-end
+# open("graph.json", "w") do f
+#     JSON.print(f, generate_json_acset(g), 2)
+# end
 
 m = g.subparts.label.m
 md = Dict(m)
@@ -130,6 +122,20 @@ df[:, :total_prod] = df.total_dependents .* df.total_dependencies
 sort!(df, :total_prod, rev=true)
 # CSV.write("total.csv", df)
 
+@time registry_graph(GENERAL_REGISTRY)
+@time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "DifferentialEquations"); node_labels=:label)
+@time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "DifferentialEquations"); node_labels=:label)
+
+# 2.282436 seconds (6.28 M allocations: 609.085 MiB, 31.22% gc time, 38.79% compilation time)
+
+# 0.146270 seconds (484.05 k allocations: 49.821 MiB, 8.23% gc time)
+
+# 0.147891 seconds (511.40 k allocations: 52.233 MiB, 8.91% gc time)
+
+
+# @time to_graphviz(my_depgraph(GENERAL_REGISTRY, "Catlab"); node_labels=:label) #   130.359 ms (484050 allocations: 49.82 MiB)
+# @profview to_graphviz(my_depgraph(GENERAL_REGISTRY, "Catlab"); node_labels=:label) #   130.359 ms (484050 allocations: 49.82 MiB)
+
 # i want a good treemap/replace function
 # function foo(x::isconcretetype(x))
 # VISITED=Base.IdSet{Any}()
@@ -142,3 +148,25 @@ sort!(df, :total_prod, rev=true)
 
 #     @show(md[p])
 # end
+
+
+# r = MyPkgGraph.REGISTRIES[3]
+# pkg = "JuliaSim"
+# pkg = "Pumas"
+# id = MyPkgGraph.uuid(r, pkg)
+# r.pkgs[id]
+# AbstractTrees.children(r, id)
+
+# all_pkgs = map(x->x.pkgs, MyPkgGraph.REGISTRIES)
+# total = merge(all_pkgs...)
+
+# AbstractTrees.children(total, id)
+
+# x = deepcopy(GENERAL_REGISTRY)
+# using Setfield
+# @set! x.pkgs = total
+# AbstractTrees.children(x, id)
+# x.pkgs[id]
+
+#idk how to get private registries to work
+

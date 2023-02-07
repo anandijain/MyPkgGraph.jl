@@ -125,13 +125,43 @@ sort!(df, :total_prod, rev=true)
 @time registry_graph(GENERAL_REGISTRY)
 @time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "DifferentialEquations"); node_labels=:label)
 @time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "DifferentialEquations"); node_labels=:label)
+@time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "ModelingToolkit"); node_labels=:label)
+@time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "DiffEqBase"); node_labels=:label)
 
+
+
+@time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "DifferentialEquations"; dir=:in); node_labels=:label)
+
+
+to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "ReactionSensitivity"); node_labels=:label)
+draw(s; dir=:out) = to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, s; dir); node_labels=:label)
+# draw(g::Catlab.Graphs.HasGraph) = to_graphviz(g; node_labels=:label)
+
+@time to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "ModelingToolkit"; dir=:in); node_labels=:label)
+url(s) = GENERAL_REGISTRY.pkgs[MyPkgGraph.uuid(s)].info.repo
+
+
+@test_throws Any to_graphviz(MyPkgGraph.my_depgraph(GENERAL_REGISTRY, "Plots"; dir=:out); node_labels=:label)
+to_graphviz(MyPkgGraph.my_depgraph("Plots"; dir=:out); node_labels=:label)
+to_graphviz(MyPkgGraph.my_depgraph("GLMakie"; dir=:out); node_labels=:label)
 # 2.282436 seconds (6.28 M allocations: 609.085 MiB, 31.22% gc time, 38.79% compilation time)
 
 # 0.146270 seconds (484.05 k allocations: 49.821 MiB, 8.23% gc time)
 
 # 0.147891 seconds (511.40 k allocations: 52.233 MiB, 8.91% gc time)
 
+# stdlib graph
+g = registry_graph()
+il, li = MyPkgGraph.bijection(unzip(collect(g.subparts.label.m))...)
+
+my_depgraph(g, getd(li, MyPkgGraph.STDLIB_NAMES))
+
+sg = Catlab.Graphs.induced_subgraph(g, getd(li, MyPkgGraph.STDLIB_NAMES))
+draw(sg)
+
+sg[setdiff(Catlab.Graphs.vertices(sg), unique(last.(collect(sg.subparts.tgt.m)))), :label]
+
+# function top_level_pkgs(g)
 
 # @time to_graphviz(my_depgraph(GENERAL_REGISTRY, "Catlab"); node_labels=:label) #   130.359 ms (484050 allocations: 49.82 MiB)
 # @profview to_graphviz(my_depgraph(GENERAL_REGISTRY, "Catlab"); node_labels=:label) #   130.359 ms (484050 allocations: 49.82 MiB)

@@ -135,7 +135,7 @@ end
 @acset_type IndexedLabeledGraph(Catlab.Graphs.SchLabeledGraph, index=[:src, :tgt],
     unique_index=[:label]) <: Catlab.Graphs.AbstractLabeledGraph
 
-function registry_graph(reg)
+function registry_graph(reg=GENERAL_REGISTRY)
     Pkg.Registry.create_name_uuid_mapping!(reg)
     map(x -> Pkg.Registry.init_package_info!(last(x)), collect(reg.pkgs))
     pkgs = reg.pkgs
@@ -158,8 +158,9 @@ function registry_graph(reg)
     end
     g
 end
-my_depgraph(g, pkg; dir=:out) = Catlab.Graphs.induced_subgraph(g, findall(!=(0), Graphs.degree(Graphs.bfs_tree(Graphs.DiGraph(g), Dict(reverse.(collect(g.subparts.label.m)))[pkg]; dir))))
-my_depgraph(r::Pkg.Registry.RegistryInstance, pkg; dir=:out) = my_depgraph(registry_graph(r), pkg; dir)
+my_depgraph(g, vs; dir=:out) = Catlab.Graphs.induced_subgraph(g, findall(!=(0), Graphs.degree(Graphs.bfs_tree(Graphs.DiGraph(g), vs; dir))))
+my_depgraph(g, pkg::AbstractString; dir=:out) = my_depgraph(g, Dict(reverse.(collect(g.subparts.label.m)))[pkg]; dir) # remove the dict bs when i understand catlab
+my_depgraph(r::Pkg.Registry.RegistryInstance, pkg::AbstractString; dir=:out) = my_depgraph(registry_graph(r), pkg; dir)
 my_depgraph(pkg; dir=:out) = my_depgraph(registry_graph(GENERAL_REGISTRY), pkg; dir)
 
 export IndexedLabeledGraph, direct_deps_from_registry, GENERAL_REGISTRY, indirect_deps, registry_graph, my_depgraph

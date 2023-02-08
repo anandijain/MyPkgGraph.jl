@@ -14,6 +14,7 @@ import Graphs
 using UUIDs
 using DataFrames
 using TOML
+using Setfield
 
 using Pkg.Registry: reachable_registries,
     uuids_from_name,
@@ -22,10 +23,8 @@ using Pkg.Registry: reachable_registries,
     JULIA_UUID
 
 # a lot of this is stolen from https://github.com/tfiers/PkgGraph.jl. thanks! 
-# function __init__()
 REGISTRIES = Pkg.Registry.reachable_registries()
 const GENERAL_REGISTRY = REGISTRIES[findfirst(reg.name == "General" for reg in REGISTRIES)]
-# end
 
 getd(d, xs) = map(x -> d[x], xs)
 unzip(xs) = first.(xs), last.(xs)
@@ -132,12 +131,39 @@ function pairs_to_df(ps)
     DataFrame(pkg=c1, indegree=c2)
 end
 
+function init_reg!(reg)
+    Pkg.Registry.create_name_uuid_mapping!(reg)
+    map(x -> Pkg.Registry.init_package_info!(last(x)), collect(reg.pkgs))
+end
+
+"""
+this is a hack to allow generating a registry graph of private registries with packages that depend on pacakges in General or other registries
+
+i assume r1 is the private registry and r2 is General, we return the r1 with r2 merged into it
+
+maybe make a fold function for >2 registries
+
+todo add a test for this with a dummy registry
+"""
+function merge_registries(r1, r2)
+    MyPkgGraph.init_reg!(r1)
+    MyPkgGraph.init_reg!(r2)
+    r3 = deepcopy(r1)
+    p1 = r1.pkgs
+    p2 = r2.pkgs
+    pm = merge(p1, p2)
+    nm = merge(r1.name_to_uuids, r2.name_to_uuids)
+    @assert length(pm) == length(p1) + length(p2) # check no overlap
+    @set! r3.pkgs = pm
+    @set! r3.name_to_uuids = nm
+    r3
+end
+
 @acset_type IndexedLabeledGraph(Catlab.Graphs.SchLabeledGraph, index=[:src, :tgt],
     unique_index=[:label]) <: Catlab.Graphs.AbstractLabeledGraph
 
 function registry_graph(reg=GENERAL_REGISTRY)
-    Pkg.Registry.create_name_uuid_mapping!(reg)
-    map(x -> Pkg.Registry.init_package_info!(last(x)), collect(reg.pkgs))
+    init_reg!(reg)
     pkgs = reg.pkgs
     pkgids_, pkgentries = MyPkgGraph.unzip(pkgs)
 

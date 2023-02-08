@@ -1,0 +1,6 @@
+[deps]
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+MyPkgGraph = "bc0fb8ef-5eff-489c-8b95-80debf298cd0"
+Oxygen = "df9a0d86-3283-4920-82dc-4555fc0d1d8b"

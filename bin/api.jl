@@ -3,12 +3,10 @@ using MyPkgGraph, Oxygen, HTTP, Catlab, Catlab.Graphics, Catlab.Graphics.Graphvi
 g = registry_graph(MyPkgGraph.GENERAL_REGISTRY)
 dg = Graphs.DiGraph(g)
 m = g.subparts.label.m
-md = Dict(m)
-d = Dict(reverse.(collect(m)))
+il, li = MyPkgGraph.bijection(MyPkgGraph.unzip(collect(g.subparts.label.m))...)
 
 @get "/deps/{pkg}" function precompile_resp(req, pkg)
-    bfs = Graphs.bfs_tree(dg, d[pkg]; dir=:out)
-    ig = Catlab.Graphs.induced_subgraph(g, findall(!=(0), Graphs.degree(bfs)))
+    ig = my_depgraph(g, pkg)
     gv = to_graphviz(ig; node_labels=:label)
     io = IOBuffer()
     run_graphviz(io, gv, format="svg")
@@ -16,8 +14,15 @@ d = Dict(reverse.(collect(m)))
 end
 
 @get "/invdeps/{pkg}" function precompile_resp(req, pkg)
-    bfs = Graphs.bfs_tree(dg, d[pkg]; dir=:in)
-    ig = Catlab.Graphs.induced_subgraph(g, findall(!=(0), Graphs.degree(bfs)))
+    ig = my_depgraph(g, pkg; dir=:in)
+    gv = to_graphviz(ig; node_labels=:label)
+    io = IOBuffer()
+    run_graphviz(io, gv, format="svg")
+    HTTP.Response(200, ["Content-Type" => "image/svg+xml"]; body=take!(io))
+end
+
+@get "/bidir/{pkg}" function precompile_resp(req, pkg)
+    ig = MyPkgGraph.bidir_depgraph(g, li[pkg])
     gv = to_graphviz(ig; node_labels=:label)
     io = IOBuffer()
     run_graphviz(io, gv, format="svg")

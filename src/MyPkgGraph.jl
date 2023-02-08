@@ -184,10 +184,17 @@ function registry_graph(reg=GENERAL_REGISTRY)
     end
     g
 end
-my_depgraph(g, vs; dir=:out) = Catlab.Graphs.induced_subgraph(g, findall(!=(0), Graphs.degree(Graphs.bfs_tree(Graphs.DiGraph(g), vs; dir))))
+my_depgraph(g, v; dir=:out) = Catlab.Graphs.induced_subgraph(g, findall(!=(0), Graphs.degree(Graphs.bfs_tree(Graphs.DiGraph(g), v; dir))))
 my_depgraph(g, pkg::AbstractString; dir=:out) = my_depgraph(g, Dict(reverse.(collect(g.subparts.label.m)))[pkg]; dir) # remove the dict bs when i understand catlab
 my_depgraph(r::Pkg.Registry.RegistryInstance, pkg::AbstractString; dir=:out) = my_depgraph(registry_graph(r), pkg; dir)
 my_depgraph(pkg; dir=:out) = my_depgraph(registry_graph(GENERAL_REGISTRY), pkg; dir)
+
+function bidir_depgraph(g, v) 
+    t1 = Graphs.bfs_tree(Graphs.DiGraph(g), v; dir=:out)
+    t2 = Graphs.bfs_tree(Graphs.DiGraph(g), v; dir=:in)
+    vs = unique([findall(!=(0), Graphs.degree(t1)); findall(!=(0), Graphs.degree(t2))])
+    Catlab.Graphs.induced_subgraph(g, vs)
+end
 
 export IndexedLabeledGraph, direct_deps_from_registry, GENERAL_REGISTRY, indirect_deps, registry_graph, my_depgraph
 end # module MyPkgGraph

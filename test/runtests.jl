@@ -161,3 +161,6 @@ to_graphviz(sg; node_labels=:label)
 # top level stdlibs
 sg[setdiff(Catlab.Graphs.vertices(sg), unique(last.(collect(sg.subparts.tgt.m)))), :label]
 
+# bidir_depgraph
+bg = MyPkgGraph.bidir_depgraph(g, li["Plots"])
+to_graphviz(bg; node_labels=:label)

@@ -2,4 +2,4 @@
 
 todo just depend on PkgGraph.jl
 
-right now this gives me a csv of the dependency graph of the general registry 
+[demo video](https://youtu.be/S6nN6V4B8Js?t=103)
